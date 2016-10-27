@@ -5,7 +5,7 @@ import 'todomvc-app-css/index.css'
 
 import { Provider } from 'react-redux'
 import todosFactory from './models/todos'
-import { asReduxStore, connectReduxDevtools } from 'mobx-state-tree'
+import { asReduxStore } from 'mobx-state-tree'
 
 const initialState = {
     todos: [{
@@ -16,7 +16,21 @@ const initialState = {
 }
 const todos = window.todos = todosFactory(initialState)
 const store = asReduxStore(todos)
-connectReduxDevtools(todos)
+
+if (window.__REDUX_DEVTOOLS_EXTENSION__) {
+  const reducer = (state, action) => {
+    const { type, ...rest } = action
+    if (todos[type]) todos[type].call(this,rest)
+    return [...todos.todos]
+  }
+  const devTools = window.__REDUX_DEVTOOLS_EXTENSION__(reducer, [...todos.todos])
+  devTools.subscribe(() => {
+    todos.todos.replace(devTools.getState())
+  })
+  store.dispatch = action => {
+    devTools.dispatch(action)
+  }
+}
 
 render(
   <Provider store={store}>
